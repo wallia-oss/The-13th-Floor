@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 13th Floor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;700;800;900&family=General+Sans:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a2030;--panel:#222840;--panel2:#2a3050;
+  --gold:#c9a84c;--gold2:#a8863a;--gold3:#e8c870;
+  --cream:#f0ebe0;--cream2:#c8c0a8;--cream3:#7a7060;--cream4:#3a3428;
+  --red:#c0392b;--red2:#e74c3c;--green:#27ae60;--green2:#2ecc71;
+  --radius:8px;--rsm:4px;
+}
+html,body{height:100%;background:var(--bg)}
+body{color:var(--cream);font-family:'General Sans',sans-serif;font-size:14px;min-height:100vh}
+
+/* HEADER */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(26,32,48,0.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(201,168,76,0.2);
+  padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
+}
+.hd-left{display:flex;flex-direction:column}
+.hd-eyebrow{font-size:9px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);opacity:.8}
+.hd-title{font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;letter-spacing:-.02em;color:var(--cream);line-height:1}
+.hd-title span{color:var(--gold)}
+.hd-right{display:flex;align-items:center;gap:12px}
+.hd-balance{font-family:'Cabinet Grotesk',sans-serif;font-size:18px;font-weight:800;color:var(--gold);transition:color .3s}
+.hd-balance.win{color:var(--green2)}.hd-balance.lose{color:var(--red2)}
+.btn-theme{background:var(--panel);border:1px solid var(--cream4);color:var(--cream2);padding:6px 12px;border-radius:var(--rsm);cursor:pointer;font-size:12px;transition:all .2s}
+.btn-theme:hover{border-color:var(--gold);color:var(--gold)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 300px;max-width:1100px;margin:0 auto;min-height:calc(100vh - 53px)}
+
+/* STAGE */
+.stage{padding:14px;display:flex;flex-direction:column;gap:10px}
+.stage-head{display:flex;align-items:center;justify-content:space-between}
+.stage-label{font-family:'Cabinet Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);opacity:.7}
+.stage-hint{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:var(--cream3)}
+.canvas-wrap{position:relative;border-radius:var(--radius);overflow:hidden;background:#4a8cc4}
+#gameCanvas{display:block;width:100%}
+
+/* HUD */
+.ride-hud{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;display:none}
+.ride-hud.visible{display:block}
+.hud-floor-badge{position:absolute;top:10px;left:10px;background:rgba(10,12,20,.88);border:1px solid rgba(201,168,76,.5);border-radius:6px;padding:6px 12px;backdrop-filter:blur(8px)}
+.hud-floor-num{font-family:'Cabinet Grotesk',sans-serif;font-size:26px;font-weight:900;color:var(--gold3);line-height:1;display:block}
+.hud-floor-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--cream3)}
+.hud-mult-badge{position:absolute;top:10px;right:10px;background:rgba(10,12,20,.88);border:1px solid rgba(201,168,76,.5);border-radius:6px;padding:6px 12px;text-align:right;backdrop-filter:blur(8px)}
+.hud-mult-val{font-family:'Cabinet Grotesk',sans-serif;font-size:26px;font-weight:900;color:var(--gold3);line-height:1;display:block}
+.hud-mult-lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--cream3)}
+/* CASHOUT BUTTON — below canvas, not inside it */
+.cashout-below{display:none;width:100%;padding:14px;background:linear-gradient(135deg,#1a6b3c,#27ae60);color:#fff;border:none;border-radius:var(--radius);font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 20px rgba(39,174,96,.5);animation:co-pulse 1.5s ease-in-out infinite;margin-top:6px}
+.cashout-below.visible{display:block}
+.cashout-below:hover{transform:translateY(-2px)}
+@keyframes co-pulse{0%,100%{box-shadow:0 4px 20px rgba(39,174,96,.5)}50%{box-shadow:0 4px 28px rgba(39,174,96,.85)}}
+
+/* RESULT BANNER — below canvas as a full block, not overlaid */
+.result-block{display:none;padding:14px 20px;font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:800;text-align:center;border-radius:var(--radius);margin-top:6px}
+.result-block.show{display:block}
+.result-block.win-banner{background:rgba(39,174,96,.92);color:#fff}
+.result-block.lose-banner{background:rgba(192,57,43,.92);color:#fff}
+.result-block.neutral-banner{background:rgba(201,168,76,.92);color:#0a0907}
+
+/* FLOOR STRIP */
+.floor-strip{display:flex;gap:4px;flex-wrap:wrap;min-height:26px}
+.floor-chip{font-family:'Cabinet Grotesk',sans-serif;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.floor-chip.success{background:rgba(39,174,96,.2);color:var(--green2);border:1px solid rgba(39,174,96,.3)}
+.floor-chip.crash{background:rgba(192,57,43,.2);color:var(--red2);border:1px solid rgba(192,57,43,.3)}
+
+/* SIDEBAR */
+.sidebar{border-left:1px solid rgba(201,168,76,.12);padding:14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 53px)}
+.card{background:var(--panel);border:1px solid rgba(201,168,76,.1);border-radius:var(--radius);padding:13px}
+.card-title{font-family:'Cabinet Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);opacity:.7;margin-bottom:9px}
+.timer-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.timer-label{font-size:11px;color:var(--cream3)}
+.timer-val{font-family:'Cabinet Grotesk',sans-serif;font-size:20px;font-weight:900;color:var(--gold)}
+.timer-val.urgent{color:var(--red2);animation:urg .5s ease infinite alternate}
+@keyframes urg{from{opacity:1}to{opacity:.4}}
+.timer-bar-track{height:3px;background:var(--panel2);border-radius:2px;overflow:hidden}
+.timer-bar-fill{height:100%;background:var(--gold);border-radius:2px;transition:width 1s linear,background .5s}
+.timer-bar-fill.urgent{background:var(--red2)}
+.stake-row{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+.stake-input{flex:1;background:var(--panel2);border:1px solid var(--cream4);color:var(--cream);font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:700;padding:8px 10px;border-radius:var(--rsm);outline:none;text-align:right;transition:border-color .2s}
+.stake-input:focus{border-color:var(--gold)}
+.stake-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px}
+.stake-chip{background:var(--panel2);border:1px solid var(--cream4);color:var(--cream2);padding:4px 8px;border-radius:var(--rsm);cursor:pointer;font-size:11px;font-weight:600;font-family:'Cabinet Grotesk',sans-serif;transition:all .15s}
+.stake-chip:hover{border-color:var(--gold);color:var(--gold)}
+.floor-target-row{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.floor-target-label{font-size:11px;color:var(--cream3)}
+.floor-btns{display:flex;gap:4px;flex-wrap:wrap}
+.floor-btn{background:var(--panel2);border:1px solid var(--cream4);color:var(--cream2);padding:4px 8px;border-radius:var(--rsm);cursor:pointer;font-size:11px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif;transition:all .15s}
+.floor-btn:hover{border-color:var(--gold);color:var(--gold)}
+.floor-btn.active{background:rgba(201,168,76,.1);border-color:var(--gold);color:var(--gold)}
+.pot-win-row{display:flex;justify-content:space-between;align-items:center;background:var(--panel2);border-radius:var(--rsm);padding:7px 10px;margin-bottom:9px}
+.pot-win-label{font-size:11px;color:var(--cream3)}
+.pot-win-val{font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:800;color:var(--gold3)}
+.btn-place{width:100%;padding:12px;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#0a0907;border:none;border-radius:var(--radius);font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(201,168,76,.35)}
+.btn-place:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.5)}
+.btn-place:disabled{opacity:.4;cursor:not-allowed}
+.history-list{display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:var(--rsm);background:var(--panel2);font-size:11px}
+.history-item .hi-round{color:var(--cream3)}
+.history-item .hi-floor{font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.history-item .hi-result{font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.history-item.win .hi-result{color:var(--green2)}.history-item.loss .hi-result{color:var(--red2)}
+.history-item.win .hi-floor{color:var(--gold)}.history-item.loss .hi-floor{color:var(--red2)}
+
+@media(max-width:700px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{border-left:none;border-top:1px solid rgba(201,168,76,.12);max-height:none}
+  .hd-title{font-size:18px}
+  .btn-place{position:sticky;bottom:12px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-left">
+    <span class="hd-eyebrow">iGaming Concept Demo</span>
+    <div class="hd-title">The <span>13th</span> Floor</div>
+  </div>
+  <div class="hd-right">
+    <div class="hd-balance" id="balanceDisplay">£1,000.00</div>
+    <button class="btn-theme" onclick="toggleTheme()">☀ / ☾</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="stage">
+    <div class="stage-head">
+      <span class="stage-label" id="stageLabel">Round 1 · Betting Open</span>
+      <span class="stage-hint" id="stageHint">Place your bet before the timer runs out…</span>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="gameCanvas"></canvas>
+      <div class="ride-hud" id="rideHud">
+        <div class="hud-floor-badge">
+          <span class="hud-floor-num" id="hudFloor">G</span>
+          <span class="hud-floor-lbl">Floor</span>
+        </div>
+        <div class="hud-mult-badge">
+          <span class="hud-mult-val" id="hudMult">1.00×</span>
+          <span class="hud-mult-lbl">Multiplier</span>
+        </div>
+      </div>
+    </div><!-- end canvas-wrap -->
+    <button class="cashout-below" id="btnCashout" onclick="cashOut()">💰 Cash Out — £<span id="hudCashoutAmt">0.00</span></button>
+    <div class="result-block" id="resultBanner"></div>
+    <div class="floor-strip" id="floorStrip"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Betting Window</div>
+      <div class="timer-row">
+        <span class="timer-label">Closes in</span>
+        <span class="timer-val" id="timerVal">15s</span>
+      </div>
+      <div class="timer-bar-track"><div class="timer-bar-fill" id="timerBar" style="width:100%"></div></div>
+    </div>
+    <div class="card" id="betCard">
+      <div class="card-title">Your Bet</div>
+      <div class="stake-row">
+        <span style="font-size:13px;color:var(--cream3)">£</span>
+        <input class="stake-input" id="stakeInput" type="number" min="1" max="500" value="10">
+      </div>
+      <div class="stake-chips">
+        <button class="stake-chip" onclick="setStake(5)">£5</button>
+        <button class="stake-chip" onclick="setStake(10)">£10</button>
+        <button class="stake-chip" onclick="setStake(25)">£25</button>
+        <button class="stake-chip" onclick="setStake(50)">£50</button>
+        <button class="stake-chip" onclick="setStake(100)">£100</button>
+      </div>
+      <div class="floor-target-row">
+        <div class="floor-target-label">Auto cash-out floor (optional)</div>
+        <div class="floor-btns" id="floorBtns"></div>
+      </div>
+      <div class="pot-win-row">
+        <span class="pot-win-label">Potential return</span>
+        <span class="pot-win-val" id="potWin">—</span>
+      </div>
+      <button class="btn-place" onclick="placeBet()">Place Bet · Ride Up</button>
+    </div>
+
+    <!-- Live ride stats — shown during riding, hidden during betting -->
+    <div class="card" id="rideStatsCard" style="display:none">
+      <div class="card-title">Live Ride</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--cream3)">Passengers aboard</span>
+        <span id="sidePax" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:14px;color:var(--cream)">1</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--cream3)">⚡ Cable stress</span>
+        <span id="sideStressPct" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:14px">0%</span>
+      </div>
+      <div style="height:7px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-bottom:8px">
+        <div id="sideStressFill" style="height:100%;width:0%;background:#27ae60;border-radius:4px;transition:width .5s,background .5s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--cream3)">Crash prob. next floor</span>
+        <span id="sideCrashProb" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:14px">—</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Round History</div>
+      <div class="history-list" id="historyList"><div style="font-size:11px;color:var(--cream3);font-style:italic">No rounds played yet</div></div>
+    </div>
+    <div class="card" style="border-color:rgba(201,168,76,.25)">
+      <div class="card-title">Concept Note</div>
+      <p style="font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:var(--cream2);line-height:1.6">More passengers = heavier lift = fraying cable. Watch the stress gauge. The 13th floor awaits — if you dare.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── roundRect polyfill for older iOS Safari ──
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    const radius = Array.isArray(r) ? r[0] : (r || 0);
+    const rad = Math.min(radius, w/2, h/2);
+    this.moveTo(x + rad, y);
+    this.lineTo(x + w - rad, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + rad);
+    this.lineTo(x + w, y + h - rad);
+    this.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+    this.lineTo(x + rad, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - rad);
+    this.lineTo(x, y + rad);
+    this.quadraticCurveTo(x, y, x + rad, y);
+    this.closePath();
+    return this;
+  };
+}
+
+// ═══════════════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════════════
+const MAX_FLOORS = 13;
+const BASEMENT_FLOOR = -2; // lift falls this far below ground after crash
+const TIMER_SECS = 15;
+const RIDE_MS = 2000;
+
+// Rebalanced for 95% RTP across all floors, F13 jackpot ~100x.
+// Math: P(reach F) * FLOOR_MULT[F] ≈ 0.95 for every F.
+// See maths analysis — average RTP 95.05%, spread 3.3pp.
+const FLOOR_MULT = [0,1.00,1.05,1.15,1.35,1.70,2.30,3.20,5.10,8.50,14.50,26.25,50.00,100.00];
+const BASE_CRASH = [0,.0400,.0503,.0653,.0829,.1023,.1233,.1456,.1690,.1935,.2189,.2451,.2722,.3000];
+const SCRIPTED_PAX = {2:1,4:2,6:1,7:2,9:1,10:1,11:1};
+// Demo sequence — shows the full game arc to investors:
+// early-mid crashes, then a deeper run, then a F13 jackpot moment.
+// In production this is replaced by RNG sampling from BASE_CRASH curve.
+const DEMO_CRASHES = [7,10,4,8,13,5,11,9,6,12,3,8];
+
+let balance=1000, round=1, gamePhase='betting';
+let timerSecs=TIMER_SECS, timerInterval=null, rideTimeout=null;
+let betPlaced=false, betStake=0, targetFloor=null;
+let currentFloor=0, passengers=1, hasCashedOut=false;
+let roundHistory=[], roundCrashFloor=null, demoIdx=0;
+
+// Animation state — ONE unified loop owns everything
+let liftY   = 0;   // current animated lift position (floor units, fractional)
+let camY    = 0;   // current camera (floor units, fractional)
+let liftTarget = 0; // where lift is heading
+let camTarget  = 0;
+let crashAnim  = false; // true during crash fall
+let crashVel   = 0;
+let shakeFrames = 0;
+let splat = false;      // bloodbath splat visible
+let splatAlpha = 0;     // fade in
+let rafId = null;
+let cloudOffsets = [0, 0, 0]; // parallax cloud positions
+
+// ═══════════════════════════════════════
+// AUDIO ENGINE — Web Audio API, no external files
+// ═══════════════════════════════════════
+let audioCtx = null;
+let humNodes = null;     // {osc, gain, lfo, lfoGain, filter} for ambient hum
+let rumbleNodes = null;  // {noise, gain, filter} for falling rumble
+let rumbleStartTimer = null; // scheduled startFallRumble — cancellable
+let masterGain = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new Ctx();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.55;
+    masterGain.connect(audioCtx.destination);
+  } catch(e) { audioCtx = null; }
+}
+
+function resumeAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+// Floor arrival "bing-bong" — classic lift chime, two notes
+function playDing() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const tones = [{f: 660, t: 0},{f: 523, t: 0.18}]; // E5 then C5
+  tones.forEach(function(tone) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = tone.f;
+    // Bell-like envelope
+    gain.gain.setValueAtTime(0, now + tone.t);
+    gain.gain.linearRampToValueAtTime(0.32, now + tone.t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + tone.t + 0.7);
+    // Add slight overtone for warmth
+    const osc2 = audioCtx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.value = tone.f * 2;
+    const g2 = audioCtx.createGain();
+    g2.gain.setValueAtTime(0, now + tone.t);
+    g2.gain.linearRampToValueAtTime(0.08, now + tone.t + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + tone.t + 0.5);
+    osc.connect(gain); gain.connect(masterGain);
+    osc2.connect(g2); g2.connect(masterGain);
+    osc.start(now + tone.t); osc.stop(now + tone.t + 0.75);
+    osc2.start(now + tone.t); osc2.stop(now + tone.t + 0.55);
+  });
+}
+
+// Ambient mechanical hum — runs during ride, modulated by stress
+function startHum() {
+  if (!audioCtx || humNodes) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+  const lfo = audioCtx.createOscillator();   // wobble
+  const lfoGain = audioCtx.createGain();
+
+  osc.type = 'sawtooth';
+  osc.frequency.value = 70;
+  filter.type = 'lowpass';
+  filter.frequency.value = 280;
+  filter.Q.value = 4;
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.09, now + 0.4);
+
+  // LFO modulating filter for a creaking feel
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.6;
+  lfoGain.gain.value = 60;
+  lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
+
+  osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+  osc.start(); lfo.start();
+  humNodes = {osc, gain, lfo, lfoGain, filter};
+}
+
+// Update hum based on current stress (called from RAF)
+function updateHum(stress) {
+  if (!humNodes || !audioCtx) return;
+  const t = audioCtx.currentTime;
+  // Pitch climbs with stress; filter opens up so it sounds more strained
+  humNodes.osc.frequency.setTargetAtTime(70 + stress * 80, t, 0.2);
+  humNodes.filter.frequency.setTargetAtTime(280 + stress * 600, t, 0.2);
+  humNodes.lfo.frequency.setTargetAtTime(0.6 + stress * 2.5, t, 0.2);
+}
+
+function stopHum() {
+  if (!humNodes || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const h = humNodes;
+  humNodes = null;
+  try {
+    h.gain.gain.cancelScheduledValues(now);
+    h.gain.gain.setValueAtTime(h.gain.gain.value, now);
+    h.gain.gain.linearRampToValueAtTime(0, now + 0.08); // fast hard fade
+    // Stop oscillators almost immediately — gain ramp covers the click
+    h.osc.stop(now + 0.10);
+    h.lfo.stop(now + 0.10);
+  } catch(e) {}
+}
+
+// Hard-kill all looping sounds — safety net used at crash impact and round reset
+function stopAllSounds() {
+  stopHum();
+  stopFallRumble();
+}
+
+// Sharp metallic cable snap — short burst of high-freq + noise
+function playCableSnap() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  // Metal "twang" — fast descending pitch
+  const osc = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(1400, now);
+  osc.frequency.exponentialRampToValueAtTime(180, now + 0.25);
+  og.gain.setValueAtTime(0.45, now);
+  og.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+  osc.connect(og); og.connect(masterGain);
+  osc.start(now); osc.stop(now + 0.32);
+
+  // White noise crack
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.4, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/data.length, 2);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buf;
+  const ng = audioCtx.createGain();
+  const nf = audioCtx.createBiquadFilter();
+  nf.type = 'highpass'; nf.frequency.value = 1500;
+  ng.gain.setValueAtTime(0.5, now);
+  ng.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+  noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
+  noise.start(now);
+}
+
+// Falling whoosh/wind rumble — low filtered noise that builds
+function startFallRumble() {
+  if (!audioCtx || rumbleNodes) return;
+  const now = audioCtx.currentTime;
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random()*2-1;
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buf; noise.loop = true;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 200;
+  filter.Q.value = 2;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.5, now + 0.3);
+  // Filter opens up as fall progresses → sounds more frantic
+  filter.frequency.linearRampToValueAtTime(800, now + 1.5);
+  noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+  noise.start(now);
+  rumbleNodes = {noise, gain, filter};
+}
+
+function stopFallRumble() {
+  // Cancel pending start (if rumble was scheduled but hasn't started yet)
+  if (rumbleStartTimer) { clearTimeout(rumbleStartTimer); rumbleStartTimer = null; }
+  if (!rumbleNodes || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const r = rumbleNodes;
+  rumbleNodes = null;
+  try {
+    r.gain.gain.cancelScheduledValues(now);
+    r.gain.gain.setValueAtTime(r.gain.gain.value, now);
+    r.gain.gain.linearRampToValueAtTime(0, now + 0.06); // fast hard fade
+    r.noise.stop(now + 0.08);
+  } catch(e) {}
+}
+
+// Deep impact thud — sub-bass boom
+function playImpactThud() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  // Sub-bass sine drop
+  const osc = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(120, now);
+  osc.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+  og.gain.setValueAtTime(0, now);
+  og.gain.linearRampToValueAtTime(0.85, now + 0.02);
+  og.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+  osc.connect(og); og.connect(masterGain);
+  osc.start(now); osc.stop(now + 0.95);
+
+  // Crunchy low noise burst
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.6, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/data.length, 1.5);
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buf;
+  const nf = audioCtx.createBiquadFilter();
+  nf.type = 'lowpass'; nf.frequency.value = 400;
+  const ng = audioCtx.createGain();
+  ng.gain.setValueAtTime(0.7, now);
+  ng.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+  noise.connect(nf); nf.connect(ng); ng.connect(masterGain);
+  noise.start(now);
+}
+
+// ═══════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const w = canvas.parentElement.clientWidth;
+  canvas.width  = w;
+  canvas.height = Math.round(w * (window.innerWidth <= 700 ? 1.05 : 0.72));
+}
+window.addEventListener('resize', () => { resize(); });
+resize();
+
+// ═══════════════════════════════════════
+// TIME OF DAY
+// ═══════════════════════════════════════
+function getPhase() {
+  const h = new Date().getHours() + new Date().getMinutes()/60;
+  if (h>=5  && h<8)  return 'dawn';
+  if (h>=8  && h<18) return 'day';
+  if (h>=18 && h<21) return 'dusk';
+  if (h>=21 && h<23) return 'evening';
+  return 'night';
+}
+
+const PHASE_SKY = {
+  dawn:    ['#f7b733','#fc4a1a','#f7b733'],
+  day:     ['#4a90d9','#6aafe6','#a8d4f5'],
+  dusk:    ['#c0392b','#e67e22','#f39c12'],
+  evening: ['#2c3e50','#8e44ad','#6a1c6e'],
+  night:   ['#0a0c1a','#0f1225','#141830'],
+};
+
+const PHASE_UI = {
+  dawn:    {bg:'#2a1a08',panel:'#3a2510'},
+  day:     {bg:'#1a2030',panel:'#222840'},
+  dusk:    {bg:'#2a1008',panel:'#3a1a10'},
+  evening: {bg:'#1a0a28',panel:'#220e38'},
+  night:   {bg:'#0a0907',panel:'#1c1a14'},
+};
+
+function applyUITheme() {
+  const p = getPhase();
+  const t = PHASE_UI[p];
+  document.documentElement.style.setProperty('--bg', t.bg);
+  document.documentElement.style.setProperty('--panel', t.panel);
+}
+
+// ═══════════════════════════════════════
+// UNIFIED RAF LOOP
+// ═══════════════════════════════════════
+let lastRaf = 0;
+let arrivalCallback = null; // called once when lift reaches liftTarget
+
+function loop(now) {
+  rafId = requestAnimationFrame(loop);
+  const dt = Math.min(now - lastRaf, 50);
+  lastRaf = now;
+
+  // ── Animate clouds ──
+  const phase = getPhase();
+  if (phase === 'day' || phase === 'dawn' || phase === 'dusk') {
+    cloudOffsets[0] += dt * 0.012;
+    cloudOffsets[1] += dt * 0.007;
+    cloudOffsets[2] += dt * 0.018;
+    const W = canvas.width;
+    for (let i=0;i<3;i++) { if (cloudOffsets[i] > W*0.7) cloudOffsets[i] = -W*0.25; }
+  }
+
+  // ── Animate lift ──
+  if (crashAnim) {
+    crashVel += dt * 0.002; // gravity
+    liftY = Math.max(BASEMENT_FLOOR, liftY - crashVel);
+    // Camera follows lift down aggressively so player sees the basement
+    camY += (liftY - camY) * Math.min(1, dt * 0.025);
+    if (liftY <= BASEMENT_FLOOR + 0.02) {
+      crashAnim = false;
+      crashVel = 0;
+      liftY = BASEMENT_FLOOR;
+      liftTarget = BASEMENT_FLOOR; // stay in the pit, don't lerp back up
+      camY = BASEMENT_FLOOR;
+      shakeFrames = 28; // bigger jolt on basement impact
+      onCrashComplete();
+    }
+  } else if (gamePhase === 'result' && splat) {
+    // After crash impact: keep lift parked in basement, don't move
+    // (Cashed-out lift sits naturally at its target — that branch falls below)
+  } else {
+    const liftDiff = liftTarget - liftY;
+    // Faster lerp — more responsive, less sluggish
+    liftY += liftDiff * Math.min(1, dt * 0.010);
+    camY  += (liftY - camY) * Math.min(1, dt * 0.009);
+    if (Math.abs(liftDiff) < 0.001) liftY = liftTarget;
+
+    // Detect arrival — fire callback once when close enough
+    if (arrivalCallback && Math.abs(liftDiff) < 0.04) {
+      const cb = arrivalCallback;
+      arrivalCallback = null;
+      cb();
+    }
+  }
+
+  draw(now);
+}
+
+function startLoop() {
+  if (!rafId) { lastRaf = performance.now(); rafId = requestAnimationFrame(loop); }
+}
+startLoop(); // always running
+
+// ═══════════════════════════════════════
+// DRAW
+// ═══════════════════════════════════════
+function draw(now) {
+  const W = canvas.width, H = canvas.height;
+  const phase = getPhase();
+  applyUITheme();
+
+  ctx.save();
+  // Screen shake
+  if (shakeFrames > 0) {
+    shakeFrames--;
+    ctx.translate((Math.random()-.5)*10, (Math.random()-.5)*6);
+  }
+  ctx.clearRect(-20,-20,W+40,H+40);
+
+  drawSky(W, H, phase);
+  drawClouds(W, H, phase, now);
+  drawCity(W, H, phase);
+  drawBuilding(W, H, phase);
+  drawRail(W, H);
+  drawPit(W, H, phase);
+  drawCable(W, H, phase);
+  drawFloorTicks(W, H, phase);
+  drawCab(W, H, phase);
+  if(splat) drawSplat(W, H);
+
+  ctx.restore();
+  updateHUD();
+}
+
+// ── helpers ──
+function floorH(W) { return W * 0.18; }  // taller floors = more travel distance = more tension
+
+// Convert floor number → screen Y (bottom of that floor level)
+// At ground (floor 0), lift sits near bottom of canvas. Camera tracks upward.
+function fToY(floor, W, H) {
+  const fh = floorH(W);
+  const pivot = H * 0.82; // ground level sits 82% down canvas
+  return pivot - (floor - camY) * fh;
+}
+
+// ── SKY ──
+function drawSky(W, H, phase) {
+  const cols = PHASE_SKY[phase];
+  const grd = ctx.createLinearGradient(W*0.38, 0, W*0.38, H);
+  grd.addColorStop(0,   cols[0]);
+  grd.addColorStop(0.6, cols[1]);
+  grd.addColorStop(1,   cols[2]);
+  ctx.fillStyle = grd;
+  ctx.fillRect(W*0.38, 0, W*0.62, H);
+
+  // Stars at night/evening
+  if (phase==='night'||phase==='evening') {
+    const alpha = phase==='night'?0.85:0.45;
+    const stars=[.42,.04,.50,.09,.60,.03,.68,.14,.78,.06,.86,.18,.91,.08,.95,.22,.55,.25,.73,.03];
+    ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+    for(let i=0;i<stars.length;i+=2){
+      ctx.beginPath();
+      ctx.arc(stars[i]*W,(stars[i+1]-camY*0.005)*H,.9,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // Sun
+  if (phase==='day'||phase==='dawn'||phase==='dusk') {
+    const hr = new Date().getHours()+new Date().getMinutes()/60;
+    const prog = Math.max(0,Math.min(1,(hr-6)/14));
+    const sx = W*0.42 + prog*W*0.5;
+    const sy = H*0.38 - Math.sin(prog*Math.PI)*H*0.3;
+    const sunCol = phase==='day' ? '#fff9c4' : phase==='dawn' ? '#ffb347' : '#ff6b35';
+    const [sr2,sg2,sb2]=hexToRgb(sunCol);
+    const sg3=ctx.createRadialGradient(sx,sy,0,sx,sy,55);
+    sg3.addColorStop(0,`rgba(${sr2},${sg2},${sb2},0.25)`);
+    sg3.addColorStop(1,`rgba(${sr2},${sg2},${sb2},0)`);
+    ctx.fillStyle=sg3; ctx.fillRect(W*0.38,0,W*0.62,H*0.7);
+    ctx.fillStyle=sunCol;
+    ctx.beginPath();ctx.arc(sx,sy,phase==='day'?16:20,0,Math.PI*2);ctx.fill();
+  }
+
+  // Moon
+  if (phase==='night') {
+    const mx=W*0.78, my=H*0.12-camY*2;
+    ctx.fillStyle='rgba(230,235,255,0.92)';
+    ctx.beginPath();ctx.arc(mx,my,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(180,190,215,0.3)';
+    ctx.beginPath();ctx.arc(mx+5,my,12,0,Math.PI*2);ctx.fill();
+  }
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+
+// ── CLOUDS ──
+function drawClouds(W, H, phase, now) {
+  if (phase==='night'||phase==='evening') return;
+  const alpha = phase==='day'?0.92:phase==='dawn'?0.75:0.6;
+  const tint  = phase==='day'?[255,255,255]:phase==='dawn'?[255,210,160]:[255,160,100];
+
+  const defs = [
+    {baseX:0.50,y:0.08,w:0.20,layer:0},
+    {baseX:0.70,y:0.16,w:0.14,layer:1},
+    {baseX:0.85,y:0.06,w:0.10,layer:2},
+  ];
+  defs.forEach((c,i)=>{
+    const ox = cloudOffsets[i] || 0;
+    const x = W*c.baseX + ox - W*0.38;
+    const y = (c.y - camY*0.003)*H;
+    if (y < -60 || y > H*0.5) return;
+    const cw = c.w*W;
+    drawCloud(x+W*0.38, y, cw, tint, alpha);
+  });
+}
+
+function drawCloud(x, y, w, tint, alpha) {
+  const h = w * 0.36;
+  ctx.fillStyle = `rgba(${tint[0]},${tint[1]},${tint[2]},${alpha})`;
+  const bumps = [
+    {ox:0,      oy:0,    r:.55},
+    {ox:w*.20,  oy:-.20, r:.70},
+    {ox:w*.42,  oy:-.25, r:.75},
+    {ox:w*.65,  oy:-.18, r:.62},
+    {ox:w*.88,  oy:0,    r:.48},
+  ];
+  bumps.forEach(function(b) {
+    ctx.beginPath();
+    ctx.arc(x + b.ox, y + b.oy * h, h * b.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.fillRect(x, y, w, h * 0.45);
+  ctx.fillStyle = `rgba(${Math.round(tint[0]*.85)},${Math.round(tint[1]*.85)},${Math.round(tint[2]*.85)},${alpha*0.3})`;
+  ctx.fillRect(x + w*.05, y + h*.35, w*.9, h*.2);
+}
+
+// ── CITY SKYLINE ──
+// Matches reference: crisp flat silhouettes, strong stepped rooflines,
+// three atmospheric fog layers, blue-grey palette, fills to canvas bottom
+function drawCity(W, H, phase) {
+  const groundY = fToY(0, W, H);
+  const rx = W * 0.38; // right edge of building
+  const isLight = phase==='day' || phase==='dawn';
+  const isDusk  = phase==='dusk';
+  const isNight = phase==='night' || phase==='evening';
+
+  // Sky colour behind city (lower portion)
+  const skyBot = isLight ? '#a8cce8' : isDusk ? '#c06030' : '#0d1020';
+  ctx.fillStyle = skyBot;
+  ctx.fillRect(rx, 0, W - rx, H);
+
+  // Ground/road strip
+  ctx.fillStyle = isLight ? '#7090a8' : isDusk ? '#804030' : '#0a0e18';
+  ctx.fillRect(rx, groundY, W - rx, H - groundY + 10);
+
+  // Three distinct silhouette layers — far, mid, near
+  // Reference shows stepped/tiered buildings with very clear rooflines
+  const cityW = W - rx;
+
+  // Layer 1: FAR — lightest, most hazy, smallest buildings
+  const farCol = isLight ? '#8eb2cc' : isDusk ? '#9a5040' : '#181e30';
+  ctx.fillStyle = farCol;
+  const farBuildings = [
+    [0.03, 0.20, 0.08], [0.13, 0.30, 0.07], [0.22, 0.18, 0.09],
+    [0.33, 0.38, 0.08], [0.43, 0.24, 0.06], [0.51, 0.28, 0.10],
+    [0.63, 0.15, 0.07], [0.72, 0.32, 0.09], [0.83, 0.20, 0.08],
+    [0.93, 0.28, 0.07],
+  ];
+  farBuildings.forEach(function(b) {
+    const bx = rx + b[0]*cityW;
+    const bh = b[1] * H;
+    const bw2 = b[2] * cityW;
+    const by = groundY - bh;
+    if(by < H) { ctx.fillStyle = farCol; ctx.fillRect(bx, by, bw2, H - by); }
+  });
+
+  // Atmospheric haze over far layer
+  if(isLight) {
+    const haze = ctx.createLinearGradient(rx, groundY - H*0.5, rx, groundY);
+    haze.addColorStop(0, 'rgba(160,200,230,0.45)');
+    haze.addColorStop(1, 'rgba(160,210,235,0.15)');
+    ctx.fillStyle = haze; ctx.fillRect(rx, 0, W-rx, H);
+  }
+
+  // Layer 2: MID — medium, clearer silhouette
+  const midCol = isLight ? '#6a8faa' : isDusk ? '#7a3a28' : '#101520';
+  const midBuildings = [
+    [0.02, 0.35, 0.09], [0.13, 0.22, 0.08], [0.23, 0.42, 0.10],
+    [0.35, 0.19, 0.07], [0.44, 0.30, 0.09], [0.55, 0.48, 0.11],
+    [0.68, 0.26, 0.08], [0.78, 0.36, 0.10], [0.90, 0.22, 0.09],
+  ];
+  midBuildings.forEach(function(b) {
+    const bx = rx + b[0]*cityW;
+    const bh = b[1] * H;
+    const bw2 = b[2] * cityW;
+    const by = groundY - bh;
+    if(by < H) {
+      ctx.fillStyle = midCol;
+      ctx.fillRect(bx, by, bw2, H - by);
+      // Stepped top — makes roofline interesting
+      ctx.fillRect(bx + bw2*0.25, by - bh*0.08, bw2*0.5, bh*0.08);
+    }
+    // Lit windows at night
+    if(isNight) {
+      const wc2 = Math.max(1, Math.floor(bw2/10));
+      const wr2 = Math.max(1, Math.floor(bh/13));
+      for(let c=0;c<wc2;c++) for(let r=0;r<wr2;r++) {
+        if((b[0]*100+c*7+r*4)%6 < 2) {
+          ctx.fillStyle = 'rgba(255,205,120,0.28)';
+          ctx.fillRect(bx+c*10+2, by+r*13+3, 6, 8);
+        }
+      }
+    }
+  });
+
+  // Second haze pass
+  if(isLight) {
+    const h2 = ctx.createLinearGradient(rx, groundY-H*0.4, rx, groundY);
+    h2.addColorStop(0, 'rgba(150,195,225,0.25)');
+    h2.addColorStop(1, 'rgba(150,200,230,0.05)');
+    ctx.fillStyle = h2; ctx.fillRect(rx, 0, W-rx, H);
+  }
+
+  // Layer 3: NEAR — darkest, most defined, tallest, no haze
+  const nearCol = isLight ? '#4e6880' : isDusk ? '#5a2818' : '#090c14';
+  const nearBuildings = [
+    [0.01, 0.50, 0.10], [0.13, 0.28, 0.08], [0.23, 0.55, 0.11],
+    [0.36, 0.22, 0.07], [0.45, 0.40, 0.10], [0.57, 0.60, 0.12],
+    [0.71, 0.32, 0.09], [0.82, 0.45, 0.11], [0.95, 0.28, 0.08],
+  ];
+  nearBuildings.forEach(function(b) {
+    const bx = rx + b[0]*cityW;
+    const bh = b[1] * H;
+    const bw2 = b[2] * cityW;
+    const by = groundY - bh;
+    if(by < H) {
+      ctx.fillStyle = nearCol;
+      ctx.fillRect(bx, by, bw2, H - by);
+      // Distinct stepped roofline feature (antenna/water tower look)
+      ctx.fillRect(bx + bw2*0.35, by - bh*0.06, bw2*0.3, bh*0.06);
+      // Top accent block
+      ctx.fillRect(bx + bw2*0.44, by - bh*0.12, bw2*0.12, bh*0.06);
+    }
+    // Clearer windows on near layer at night
+    if(isNight) {
+      const wc2 = Math.max(1, Math.floor(bw2/12));
+      const wr2 = Math.max(1, Math.floor(bh/15));
+      for(let c=0;c<wc2;c++) for(let r=0;r<wr2;r++) {
+        if((b[0]*80+c*5+r*3)%6 < 2) {
+          ctx.fillStyle = 'rgba(255,200,110,0.35)';
+          ctx.fillRect(bx+c*12+2, by+r*15+4, 7, 9);
+        }
+      }
+    }
+    // Daytime window glints on near layer
+    if(isLight && b[1] > 0.35) {
+      const wc2 = Math.max(1, Math.floor(bw2/12));
+      const wr2 = Math.max(1, Math.floor(bh/15));
+      for(let c=0;c<wc2;c++) for(let r=0;r<wr2;r++) {
+        if((b[0]*90+c*6+r*4)%8 < 2) {
+          ctx.fillStyle = 'rgba(180,215,240,0.22)';
+          ctx.fillRect(bx+c*12+2, by+r*15+4, 7, 9);
+        }
+      }
+    }
+  });
+}
+
+// ── BUILDING FACADE ──
+function drawBuilding(W, H, phase) {
+  const bw = W * 0.38;
+  const fh = floorH(W);
+  const isLight = phase==='day' || phase==='dawn';
+  const topFloor = Math.ceil(camY + H/fh + 2);
+  const botFloor = Math.floor(camY - 3);
+
+  // Base fill — no gaps
+  ctx.fillStyle = isLight ? '#3e4a5f' : '#1e2235';
+  ctx.fillRect(0, 0, bw-2, H);
+
+  for(let f = botFloor; f <= topFloor; f++) {
+    const y  = fToY(f, W, H);
+    const py = y - fh;
+    if(py > H+5 || y < -5) continue;
+    const isPit = f <= 0;
+
+    // PIT floors
+    if(isPit) {
+      ctx.fillStyle = f%2===0 ? '#5a1510' : '#6b1a13';
+      ctx.fillRect(0, py, bw-2, fh+1);
+      ctx.fillStyle = '#4a1008';
+      ctx.fillRect(0, py, bw-2, fh*0.08);
+      if(f < 0) {
+        const pm=bw*0.08, pcW=(bw-2-pm*2)/2;
+        const pww=pcW*0.65, pwh=fh*0.48, pwy=py+fh*0.26;
+        for(let wc=0;wc<2;wc++){
+          const pwx=pm+wc*pcW+(pcW-pww)/2;
+          ctx.fillStyle='rgba(10,5,5,0.7)'; ctx.fillRect(pwx,pwy,pww,pwh);
+          ctx.strokeStyle='rgba(150,60,50,0.5)'; ctx.lineWidth=1; ctx.strokeRect(pwx,pwy,pww,pwh);
+        }
+      }
+      if(f===0) {
+        const bandH=fh*0.35;
+        ctx.fillStyle='#8a1a10'; ctx.fillRect(0,py,bw-2,bandH);
+        ctx.fillStyle='#e03020';
+        ctx.font=`900 ${Math.max(10,bandH*0.52)}px 'Cabinet Grotesk',sans-serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('▼  THE PIT  ▼', bw/2, py+bandH/2);
+      }
+      continue;
+    }
+
+    // Normal floor panel
+    ctx.fillStyle = isLight ? (f%2===0?'#3e4a5f':'#465270') : (f%2===0?'#1e2235':'#222840');
+    ctx.fillRect(0, py, bw-2, fh+1);
+
+    // Thick ledge at floor top
+    const ledgeH = Math.max(5, fh*0.11);
+    ctx.fillStyle = isLight ? '#323d52' : '#191d2e';
+    ctx.fillRect(0, py, bw-2, ledgeH);
+    ctx.fillStyle = isLight ? 'rgba(180,200,230,0.18)' : 'rgba(100,120,160,0.15)';
+    ctx.fillRect(0, py, bw-2, 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, py+ledgeH-2, bw-2, 3);
+
+    // Windows — 2 columns matching reference
+    const nCols=2, margin=bw*0.09;
+    const colW=(bw-2-margin*2)/nCols;
+    const ww=colW*0.68, wh=fh*0.52;
+    const wy=py+ledgeH+(fh-ledgeH-wh)*0.45;
+
+    for(let wc=0;wc<nCols;wc++){
+      const wx=margin+wc*colW+(colW-ww)/2;
+      const litSeed=(Math.abs(f)*13+wc*7)%10;
+      const isNight=phase==='night'||phase==='evening';
+      const lit=isNight ? litSeed<6 : litSeed<3;
+
+      ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(wx-2,wy-2,ww+4,wh+4);
+
+      if(lit&&isNight) ctx.fillStyle='rgba(255,210,130,0.28)';
+      else if(isLight) ctx.fillStyle=lit?'rgba(160,190,220,0.3)':'rgba(50,60,80,0.6)';
+      else ctx.fillStyle=lit?'rgba(200,160,100,0.22)':'rgba(60,55,70,0.5)';
+      ctx.fillRect(wx,wy,ww,wh);
+
+      ctx.strokeStyle=isLight?'rgba(160,185,220,0.35)':'rgba(90,100,130,0.5)';
+      ctx.lineWidth=1.5; ctx.strokeRect(wx,wy,ww,wh);
+
+      ctx.strokeStyle=isLight?'rgba(130,160,200,0.2)':'rgba(70,80,110,0.4)';
+      ctx.lineWidth=0.8;
+      ctx.beginPath();
+      ctx.moveTo(wx+ww/2,wy);ctx.lineTo(wx+ww/2,wy+wh);
+      ctx.moveTo(wx,wy+wh/2);ctx.lineTo(wx+ww,wy+wh/2);
+      ctx.stroke();
+    }
+  }
+
+  // Right-edge trim
+  const eg=ctx.createLinearGradient(bw-12,0,bw,0);
+  eg.addColorStop(0,'rgba(180,200,230,0)'); eg.addColorStop(1,'rgba(180,200,230,0.28)');
+  ctx.fillStyle=eg; ctx.fillRect(bw-12,0,12,H);
+}
+
+// ── RAIL ──
+function drawRail(W, H) {
+  const rx=W*0.38, rw=W*0.042;
+  const fh=floorH(W);
+
+  // Rail background
+  ctx.fillStyle='#1e2235';
+  ctx.fillRect(rx,0,rw,H);
+
+  // Left/right channel edges
+  ctx.fillStyle='#2a2f48';
+  ctx.fillRect(rx,0,3,H);
+  ctx.fillRect(rx+rw-3,0,3,H);
+
+  // Centre guide
+  const cx=rx+rw/2;
+  ctx.fillStyle='#363c58';
+  ctx.fillRect(cx-2,0,4,H);
+
+  // Bracket bolts at each floor level
+  const topFloor=Math.ceil(camY+H/fh+2), botFloor=Math.floor(camY-2);
+  for(let f=botFloor;f<=topFloor;f++){
+    const by=fToY(f,W,H)-fh/2;
+    ctx.fillStyle='#4a5068';
+    ctx.fillRect(rx+3,by-5,8,10);
+    ctx.fillRect(rx+rw-11,by-5,8,10);
+    ctx.fillStyle='#6a7288';
+    ctx.beginPath();ctx.arc(rx+7,by,2.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(rx+rw-7,by,2.5,0,Math.PI*2);ctx.fill();
+  }
+}
+
+// ── PIT GLOW ──
+function drawPit(W, H, phase) {
+  const gy=fToY(0,W,H);
+  if(gy>H+20||gy<-20) return;
+  const pg=ctx.createLinearGradient(0,gy,0,gy+H*0.3);
+  pg.addColorStop(0,'rgba(200,30,15,0.5)');
+  pg.addColorStop(.5,'rgba(140,15,8,0.2)');
+  pg.addColorStop(1,'transparent');
+  ctx.fillStyle=pg;
+  ctx.fillRect(0,gy,W*0.42,H*0.3);
+}
+
+// ── CABLE ──
+function drawCable(W, H, phase) {
+  const rx=W*0.38, rw=W*0.042;
+  const cx=rx+rw/2;
+  const stress=getStress();
+  const liftTopY=fToY(liftY,W,H)-getLiftH(W);
+
+  // CRASH MODE: cable is SNAPPED — dangles uselessly from pulley
+  if (crashAnim) {
+    // Frayed broken end of cable hanging from top, swinging
+    const sway = Math.sin(Date.now()*.005)*8;
+    const danglEnd = H * 0.18; // hangs about 18% down
+    ctx.strokeStyle = 'rgba(180,40,30,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx,10);
+    ctx.quadraticCurveTo(cx+sway*0.5, danglEnd*0.5, cx+sway, danglEnd);
+    ctx.stroke();
+    // Fraying broken threads at the tip
+    for(let t=0;t<4;t++){
+      const fr = Math.sin(Date.now()*.008+t)*4;
+      ctx.strokeStyle = 'rgba(200,60,40,'+(0.4+t*0.15)+')';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(cx+sway, danglEnd);
+      ctx.lineTo(cx+sway+fr+(t-1.5)*3, danglEnd+8+t*2);
+      ctx.stroke();
+    }
+    // Pulley wheel still at top
+    ctx.fillStyle='#2a2f48'; ctx.strokeStyle='rgba(160,40,30,.8)'; ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,10,8,0,Math.PI*2);ctx.fill();ctx.stroke();
+    return;
+  }
+
+  // Colour: silver→amber→red
+  let cr=180,cg=185,cb=200;
+  if(stress>.4){cr=220;cg=Math.round(180-140*((stress-.4)/.6));cb=60;}
+  if(stress>.75){cr=210;cg=35;cb=25;}
+
+  if(stress>.65) {
+    // Fraying threads
+    for(let t=0;t<5;t++){
+      const wb=Math.sin(Date.now()*.003+t*1.2)*stress*5;
+      ctx.strokeStyle=`rgba(${cr},${cg},${cb},${t===2?.85:.3})`;
+      ctx.lineWidth=t===2?2:.7;
+      ctx.beginPath();ctx.moveTo(cx+wb*.3,0);
+      ctx.quadraticCurveTo(cx+wb,liftTopY*.5,cx+(t-2)*1.5,liftTopY);
+      ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle=`rgba(${cr},${cg},${cb},0.88)`;
+    ctx.lineWidth=3-stress*1.5;
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,liftTopY);ctx.stroke();
+  }
+
+  // Pulley wheel at top
+  ctx.fillStyle='#2a2f48'; ctx.strokeStyle=`rgba(${cr},${cg},${cb},.7)`; ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(cx,10,8,0,Math.PI*2);ctx.fill();ctx.stroke();
+}
+
+// ── FLOOR TICKS (right of rail) ──
+function drawFloorTicks(W, H, phase) {
+  const rx=W*0.38, rw=W*0.042;
+  const fh=floorH(W);
+  const isLight=phase==='day'||phase==='dawn';
+  const topFloor=Math.ceil(camY+H/fh+2), botFloor=Math.floor(camY-2);
+
+  ctx.textBaseline='middle';
+  for(let f=1;f<=MAX_FLOORS;f++){
+    const fy=fToY(f,W,H);
+    if(fy<-20||fy>H+20) continue;
+
+    const isCur=Math.round(liftY)===f;
+    const isTgt=f===targetFloor;
+    const isAbv=f>Math.round(liftY);
+
+    // Tick mark
+    ctx.fillStyle=isCur?'#e8c870':isTgt?'#2ecc71':isAbv?(isLight?'rgba(50,60,90,.6)':'rgba(201,168,76,.3)'):(isLight?'rgba(50,60,90,.25)':'rgba(80,70,50,.25)');
+    ctx.fillRect(rx-10,fy-1.5,14,3);
+
+    // Floor number
+    ctx.textAlign='left';
+    ctx.font=`bold ${Math.max(9,fh*.17)}px 'Cabinet Grotesk',sans-serif`;
+    ctx.fillStyle=isCur?'#e8c870':isTgt?'#2ecc71':isAbv?(isLight?'rgba(40,50,75,.7)':'rgba(201,168,76,.45)'):(isLight?'rgba(40,50,75,.3)':'rgba(80,70,50,.35)');
+    ctx.fillText(f===13?'13 ✦':String(f), rx+rw+5, fy);
+
+    // Multiplier
+    ctx.font=`600 ${Math.max(8,fh*.13)}px 'General Sans',sans-serif`;
+    ctx.fillStyle=isCur?'rgba(232,200,112,.8)':isAbv?(isLight?'rgba(40,50,75,.35)':'rgba(201,168,76,.2)'):(isLight?'rgba(40,50,75,.18)':'rgba(60,50,30,.35)');
+    const m=FLOOR_MULT[f];
+    const mTxt = m>=10 ? Math.round(m)+'×' : m.toFixed(2).replace(/\.?0+$/,'')+'×';
+    ctx.fillText(mTxt, rx+rw+30, fy);
+
+    // Waiting pax
+    if(gamePhase==='riding'&&isAbv&&SCRIPTED_PAX[f]){
+      ctx.textAlign='right';
+      ctx.fillStyle='rgba(201,168,76,.6)';
+      ctx.font=`${Math.max(8,fh*.12)}px 'General Sans',sans-serif`;
+      ctx.fillText(`👤×${SCRIPTED_PAX[f]}`, rx-14, fy);
+    }
+  }
+}
+
+// ── LIFT CAB ──
+function getLiftH(W) { return Math.max(80, W * 0.20); }
+function getLiftW(W) { return Math.max(90, W * 0.26); }
+
+function drawCab(W, H, phase) {
+  const rx=W*0.38, rw=W*0.042;
+  const lh=getLiftH(W), lw=getLiftW(W);
+  const lx=rx-lw;
+  const groundY=fToY(liftY,W,H);
+  const ly=groundY-lh;
+  const stress=getStress();
+
+  // Stress colour: silver→amber→red
+  const sr=Math.round(180+75*stress);
+  const sg=Math.round(185-150*stress);
+  const sb=Math.round(200-200*stress);
+
+  // Drop shadow
+  ctx.fillStyle='rgba(0,0,0,0.22)';
+  ctx.fillRect(lx+5,ly+5,lw,lh);
+
+  // Outer cab frame — dark steel
+  ctx.fillStyle='#2a2f42';
+  ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,[6,6,3,3]);ctx.fill();
+
+  // Glass panel inset
+  const gx=lx+lw*.09, gy=ly+lh*.08, gw=lw*.82, gh=lh*.80;
+  const glGrd=ctx.createLinearGradient(gx,gy,gx+gw,gy+gh);
+  glGrd.addColorStop(0,'rgba(160,190,230,0.42)');
+  glGrd.addColorStop(.5,'rgba(140,175,215,0.30)');
+  glGrd.addColorStop(1,'rgba(120,155,200,0.38)');
+  ctx.fillStyle=glGrd;
+  ctx.beginPath();ctx.roundRect(gx,gy,gw,gh,4);ctx.fill();
+
+  // Interior warm light — switches to RED EMERGENCY during crash
+  let intGrd;
+  if (crashAnim) {
+    // Red pulsing emergency light
+    const pulse = 0.7 + 0.3 * Math.sin(performance.now() * 0.025);
+    intGrd = ctx.createLinearGradient(gx, gy, gx, gy+gh);
+    intGrd.addColorStop(0,   `rgba(255, 30, 30, ${0.55 * pulse})`);
+    intGrd.addColorStop(0.4, `rgba(220, 20, 20, ${0.50 * pulse})`);
+    intGrd.addColorStop(1,   `rgba(140, 10, 10, ${0.55 * pulse})`);
+  } else {
+    intGrd = ctx.createLinearGradient(gx, gy, gx, gy+gh);
+    intGrd.addColorStop(0,'rgba(255,240,200,0.20)');
+    intGrd.addColorStop(.4,'rgba(255,220,160,0.10)');
+    intGrd.addColorStop(1,'rgba(200,170,100,0.04)');
+  }
+  ctx.fillStyle=intGrd;
+  ctx.fillRect(gx,gy,gw,gh);
+
+  // Ceiling strip light — red flicker during crash
+  if (crashAnim) {
+    const flicker = Math.random() > 0.3 ? 1 : 0.2;
+    ctx.fillStyle = `rgba(255, 50, 50, ${0.85 * flicker})`;
+  } else {
+    ctx.fillStyle='rgba(255,248,220,0.75)';
+  }
+  ctx.fillRect(gx+gw*.1,gy+4,gw*.8,4);
+  const ceilGrd=ctx.createLinearGradient(gx,gy+8,gx,gy+28);
+  if (crashAnim) {
+    ceilGrd.addColorStop(0,'rgba(255,40,40,0.35)');
+  } else {
+    ceilGrd.addColorStop(0,'rgba(255,240,200,0.18)');
+  }
+  ceilGrd.addColorStop(1,'transparent');
+  ctx.fillStyle=ceilGrd;ctx.fillRect(gx,gy+8,gw,20);
+
+  // Passengers
+  drawPax(gx+2,gy+10,gw-4,gh-18,W);
+
+  // Glass frame
+  ctx.strokeStyle='rgba(100,115,145,0.6)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(gx,gy,gw,gh,4);ctx.stroke();
+
+  // Gold floor trim
+  ctx.fillStyle=`rgba(${sr},${Math.max(0,sg)},${Math.max(0,sb<50?sb+80:sb-20)},0.8)`;
+  ctx.fillRect(gx,gy+gh-5,gw,5);
+
+  // Glass reflection
+  const rGrd=ctx.createLinearGradient(gx,gy,gx+gw*.35,gy+gh);
+  rGrd.addColorStop(0,'rgba(255,255,255,0.13)');rGrd.addColorStop(.5,'rgba(255,255,255,.04)');rGrd.addColorStop(1,'transparent');
+  ctx.fillStyle=rGrd;ctx.fillRect(gx,gy,gw*.35,gh);
+
+  // Outer border (stress coloured)
+  ctx.strokeStyle=`rgba(${sr},${Math.max(0,sg)},${Math.max(0,sb)},0.9)`;
+  ctx.lineWidth=2.5;ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,[6,6,3,3]);ctx.stroke();
+
+  // Top trim bar
+  ctx.fillStyle=`rgba(${sr},${Math.max(0,sg)},${Math.max(0,sb)},0.55)`;
+  ctx.fillRect(lx+4,ly,lw-8,5);
+
+  // Rail brackets
+  ctx.fillStyle='#3a3f58';
+  ctx.fillRect(rx-2,ly+lh*.22,rw+4,9);
+  ctx.fillRect(rx-2,ly+lh*.65,rw+4,9);
+  ctx.fillStyle='#6a7288';
+  ctx.beginPath();ctx.arc(rx+rw/2,ly+lh*.265,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(rx+rw/2,ly+lh*.695,3.5,0,Math.PI*2);ctx.fill();
+
+  // Floor indicator badge above cab
+  drawIndicator(lx,ly,lw,sr,sg,sb);
+}
+
+function drawIndicator(lx,ly,lw,r,g,b) {
+  const iw=lw*.48,ih=22,ix=lx+(lw-iw)/2,iy=ly-ih-7;
+  ctx.fillStyle='#0e1018';
+  ctx.strokeStyle=`rgba(${r},${Math.max(0,g)},${Math.max(0,b)},.7)`;
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(ix,iy,iw,ih,4);ctx.fill();ctx.stroke();
+  ctx.fillStyle=`rgba(${r},${Math.max(0,g)},${Math.max(0,b)},.1)`;
+  ctx.fillRect(ix+2,iy+2,iw-4,ih-4);
+
+  const lbl = liftY<.4?'G': liftY>=MAX_FLOORS-.3?'13 ✦':`F${Math.round(liftY)}`;
+  const stress=getStress();
+  ctx.fillStyle=stress<.3?'rgb(60,200,80)':stress<.65?`rgb(${r},${Math.max(0,g)},${Math.max(0,b)})`:'rgb(230,55,35)';
+  ctx.font=`900 ${ih*.72}px 'Cabinet Grotesk',sans-serif`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(lbl,ix+iw/2,iy+ih/2+1);
+}
+
+// ── PASSENGERS ──
+const PAX = [
+  { coat:'#1a2848', trouser:'#151e38', shirt:'#e8e0d0', tie:'#c0392b', hair:'#1a100a', skin:'#c8906a', type:'business' },
+  { coat:'#2a1808', trouser:'#1e1005', shirt:'#f0ebe0', tie:'#2980b9', hair:'#080808', skin:'#d4a070', type:'casual'   },
+  { coat:'#1a1828', trouser:'#12101e', shirt:'#f5f0e8', tie:'#27ae60', hair:'#2a1808', skin:'#8a5a3a', type:'business' },
+  { coat:'#0a281a', trouser:'#081510', shirt:'#ede8dc', tie:'#e67e22', hair:'#120800', skin:'#c07850', type:'casual'   },
+  { coat:'#282010', trouser:'#1c1808', shirt:'#e0dcd0', tie:'#8e44ad', hair:'#382e14', skin:'#daa880', type:'business' },
+  { coat:'#1e1028', trouser:'#150c1e', shirt:'#f0ebe0', tie:'#e74c3c', hair:'#0a0610', skin:'#f0c090', type:'casual'   },
+];
+
+function drawPax(gx, gy, gw, gh, W) {
+  if(liftY < .4 && gamePhase === 'betting') return;
+  const n = Math.min(passengers, 6);
+  if(n === 0) return;
+
+  // CRASH MODE: bodies slumped on floor of cab
+  if (crashAnim) {
+    drawCrashedPax(gx, gy, gw, gh, W, n);
+    return;
+  }
+
+  const sp = gw / (n + 1);
+  for(let i = 0; i < n; i++) {
+    drawPerson(gx + sp*(i+1), gy, gh, PAX[i % PAX.length], W);
+  }
+}
+
+// Bodies lying on the floor of the cab — heads, torsos, legs visible from above-side angle
+function drawCrashedPax(gx, gy, gw, gh, W, n) {
+  // Distribute bodies along the cab floor, slightly overlapping for the "pile" feel
+  const floorY = gy + gh * 0.78;  // bodies sit on the cab floor area
+  const sp = gw / (n + 0.5);
+  for (let i = 0; i < n; i++) {
+    const cx = gx + sp * (i + 0.75);
+    drawBody(cx, floorY, gh, PAX[i % PAX.length], W, i);
+  }
+
+  // Splatter inside the cab — small blood spots near bodies
+  ctx.fillStyle = 'rgba(120, 8, 8, 0.75)';
+  for (let i = 0; i < n; i++) {
+    const cx = gx + sp * (i + 0.75);
+    const sx = cx + (((i*37)%17 - 8) * 0.6);
+    const sy = floorY + 6 + ((i*13)%9);
+    ctx.beginPath();
+    ctx.ellipse(sx, sy, 5 + (i%3), 2.5, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// One body lying on its side, head visible, slightly twisted
+function drawBody(cx, floorY, gh, a, W, idx) {
+  const hr = Math.min(gh * 0.13, W * 0.024);
+  if (hr < 3) return;
+
+  // Slight rotation for naturalism — alternate which way they face
+  const flip = idx % 2 === 0 ? 1 : -1;
+  const tilt = (idx % 3 - 1) * 0.15;
+
+  ctx.save();
+  ctx.translate(cx, floorY);
+  ctx.rotate(tilt);
+
+  // Body length — torso laid out horizontally
+  const bodyLen = hr * 3.2;
+  const bodyHt  = hr * 1.1;
+
+  // Shadow under body
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(0, hr*0.2, bodyLen*0.6, hr*0.35, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── LEGS — splayed, awkward angles ──
+  ctx.fillStyle = a.trouser;
+  // Leg 1
+  ctx.beginPath();
+  ctx.moveTo(-bodyLen*0.05, -bodyHt*0.15);
+  ctx.lineTo(bodyLen*0.45, -bodyHt*0.4);
+  ctx.lineTo(bodyLen*0.48, -bodyHt*0.15);
+  ctx.lineTo(-bodyLen*0.05, bodyHt*0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Leg 2 — different angle
+  ctx.beginPath();
+  ctx.moveTo(-bodyLen*0.05, -bodyHt*0.05);
+  ctx.lineTo(bodyLen*0.50, bodyHt*0.30);
+  ctx.lineTo(bodyLen*0.52, bodyHt*0.50);
+  ctx.lineTo(-bodyLen*0.05, bodyHt*0.20);
+  ctx.closePath();
+  ctx.fill();
+
+  // Shoes
+  ctx.fillStyle = '#1a1008';
+  ctx.beginPath();
+  ctx.ellipse(bodyLen*0.48, -bodyHt*0.28, hr*0.28, hr*0.18, -0.2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(bodyLen*0.52, bodyHt*0.42, hr*0.28, hr*0.18, 0.2, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── TORSO — jacket on its side ──
+  ctx.fillStyle = a.coat;
+  ctx.beginPath();
+  ctx.ellipse(-bodyLen*0.12, 0, bodyLen*0.32, bodyHt*0.55, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Shirt patch peeking
+  ctx.fillStyle = a.shirt;
+  ctx.beginPath();
+  ctx.ellipse(-bodyLen*0.05, -bodyHt*0.05, bodyLen*0.1, bodyHt*0.18, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Tie
+  ctx.fillStyle = a.tie;
+  ctx.beginPath();
+  ctx.moveTo(-bodyLen*0.08, -bodyHt*0.05);
+  ctx.lineTo(-bodyLen*0.02, -bodyHt*0.05);
+  ctx.lineTo(bodyLen*0.05, -bodyHt*0.25);
+  ctx.lineTo(bodyLen*0.02, -bodyHt*0.30);
+  ctx.lineTo(-bodyLen*0.04, -bodyHt*0.20);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── ARM — flopped out ──
+  ctx.fillStyle = a.coat;
+  ctx.beginPath();
+  ctx.moveTo(-bodyLen*0.20, -bodyHt*0.1);
+  ctx.lineTo(-bodyLen*0.45, -bodyHt*0.45 * flip);
+  ctx.lineTo(-bodyLen*0.48, -bodyHt*0.25 * flip);
+  ctx.lineTo(-bodyLen*0.20, bodyHt*0.05);
+  ctx.closePath();
+  ctx.fill();
+  // Hand
+  ctx.fillStyle = a.skin;
+  ctx.beginPath();
+  ctx.arc(-bodyLen*0.46, -bodyHt*0.35 * flip, hr*0.30, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── HEAD — turned to side, eyes closed (X marks would be too cartoony, just shut) ──
+  const headX = -bodyLen*0.42;
+  const headY = -bodyHt*0.05;
+  // Head
+  const hGrd = ctx.createRadialGradient(headX-hr*0.2, headY-hr*0.2, hr*0.1, headX, headY, hr);
+  hGrd.addColorStop(0, shade(a.skin, 15));
+  hGrd.addColorStop(0.6, a.skin);
+  hGrd.addColorStop(1, shade(a.skin, -40));
+  ctx.fillStyle = hGrd;
+  ctx.beginPath();
+  ctx.ellipse(headX, headY, hr*1.05, hr*0.9, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Hair on top of head
+  ctx.fillStyle = a.hair;
+  ctx.beginPath();
+  ctx.ellipse(headX - hr*0.1, headY - hr*0.55, hr*0.85, hr*0.4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Closed eye — single line
+  ctx.strokeStyle = shade(a.skin, -55);
+  ctx.lineWidth = hr * 0.12;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(headX - hr*0.05, headY - hr*0.1);
+  ctx.lineTo(headX + hr*0.30, headY - hr*0.1);
+  ctx.stroke();
+
+  // Mouth — open/agape
+  ctx.fillStyle = shade(a.skin, -65);
+  ctx.beginPath();
+  ctx.ellipse(headX + hr*0.15, headY + hr*0.30, hr*0.15, hr*0.10, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Blood pool around head
+  ctx.fillStyle = 'rgba(110, 8, 8, 0.85)';
+  ctx.beginPath();
+  ctx.ellipse(headX, headY + hr*0.6, hr*1.3, hr*0.45, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPerson(cx, gy, gh, a, W) {
+  // Scale everything off head radius for consistent proportions
+  const hr = Math.min(gh * 0.15, W * 0.028);
+  if(hr < 3) return; // too small to draw
+
+  const headY   = gy + gh * 0.08 + hr;
+  const neckBot  = headY + hr * 0.8;
+  const shoulderY = neckBot + hr * 0.3;
+  const sw       = hr * 1.7;  // half shoulder width
+  const waistY   = shoulderY + hr * 2.4;
+  const hipW     = sw * 0.75;
+  const kneeY    = waistY + hr * 1.8;
+  const footY    = gy + gh - hr * 0.3;
+  const footW    = hr * 0.55;
+
+  // ── Floor shadow ──
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx.beginPath();
+  ctx.ellipse(cx, footY + 3, hr * 1.4, hr * 0.3, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── SHOES ──
+  ctx.fillStyle = '#1a1008';
+  ctx.beginPath();
+  ctx.ellipse(cx - hr*0.45, footY, footW*1.2, hr*0.22, -0.2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + hr*0.45, footY, footW*1.2, hr*0.22, 0.2, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── TROUSERS / LEGS ──
+  ctx.fillStyle = a.trouser;
+  // Left leg
+  ctx.beginPath();
+  ctx.moveTo(cx - hipW*0.8, waistY);
+  ctx.lineTo(cx - hr*0.6, kneeY);
+  ctx.lineTo(cx - hr*0.35, footY - hr*0.1);
+  ctx.lineTo(cx - hr*0.7, footY - hr*0.1);
+  ctx.lineTo(cx - hipW*0.9, kneeY);
+  ctx.closePath();
+  ctx.fill();
+  // Right leg
+  ctx.beginPath();
+  ctx.moveTo(cx + hipW*0.8, waistY);
+  ctx.lineTo(cx + hr*0.6, kneeY);
+  ctx.lineTo(cx + hr*0.35, footY - hr*0.1);
+  ctx.lineTo(cx + hr*0.7, footY - hr*0.1);
+  ctx.lineTo(cx + hipW*0.9, kneeY);
+  ctx.closePath();
+  ctx.fill();
+  // Trouser crease highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(cx - hr*0.52, waistY + hr*0.5);
+  ctx.lineTo(cx - hr*0.45, kneeY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + hr*0.52, waistY + hr*0.5);
+  ctx.lineTo(cx + hr*0.45, kneeY);
+  ctx.stroke();
+
+  // ── JACKET / TORSO ──
+  // Main jacket shape
+  ctx.fillStyle = a.coat;
+  ctx.beginPath();
+  ctx.moveTo(cx - sw, shoulderY);
+  ctx.lineTo(cx + sw, shoulderY);
+  ctx.lineTo(cx + hipW, waistY + hr*0.3);
+  ctx.lineTo(cx - hipW, waistY + hr*0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Jacket lapels + shirt visible
+  ctx.fillStyle = a.shirt;
+  ctx.beginPath();
+  ctx.moveTo(cx - hr*0.35, shoulderY + hr*0.2);
+  ctx.lineTo(cx + hr*0.35, shoulderY + hr*0.2);
+  ctx.lineTo(cx + hr*0.18, waistY);
+  ctx.lineTo(cx - hr*0.18, waistY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Left lapel
+  ctx.fillStyle = a.coat;
+  ctx.beginPath();
+  ctx.moveTo(cx - hr*0.05, shoulderY + hr*0.2);
+  ctx.lineTo(cx - hr*0.38, shoulderY + hr*0.8);
+  ctx.lineTo(cx - hr*0.18, waistY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right lapel
+  ctx.beginPath();
+  ctx.moveTo(cx + hr*0.05, shoulderY + hr*0.2);
+  ctx.lineTo(cx + hr*0.38, shoulderY + hr*0.8);
+  ctx.lineTo(cx + hr*0.18, waistY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Tie
+  ctx.fillStyle = a.tie;
+  ctx.beginPath();
+  ctx.moveTo(cx - hr*0.1, shoulderY + hr*0.5);
+  ctx.lineTo(cx + hr*0.1, shoulderY + hr*0.5);
+  ctx.lineTo(cx + hr*0.08, waistY - hr*0.2);
+  ctx.lineTo(cx, waistY + hr*0.1);
+  ctx.lineTo(cx - hr*0.08, waistY - hr*0.2);
+  ctx.closePath();
+  ctx.fill();
+
+  // Jacket button
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  ctx.arc(cx, waistY - hr*0.6, hr*0.12, 0, Math.PI*2);
+  ctx.fill();
+
+  // Jacket highlight (left shoulder)
+  const jHi = ctx.createLinearGradient(cx-sw, shoulderY, cx-sw*0.3, shoulderY+hr*1.5);
+  jHi.addColorStop(0, 'rgba(255,255,255,0.12)');
+  jHi.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = jHi;
+  ctx.beginPath();
+  ctx.moveTo(cx-sw, shoulderY);
+  ctx.lineTo(cx-sw*0.3, shoulderY);
+  ctx.lineTo(cx-hipW*0.6, waistY+hr*0.3);
+  ctx.lineTo(cx-hipW, waistY+hr*0.3);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── ARMS ──
+  // Left arm (hanging slightly forward)
+  ctx.fillStyle = a.coat;
+  ctx.beginPath();
+  ctx.moveTo(cx - sw, shoulderY + hr*0.2);
+  ctx.lineTo(cx - sw - hr*0.3, shoulderY + hr*0.3);
+  ctx.lineTo(cx - sw*0.7 - hr*0.3, waistY + hr*0.5);
+  ctx.lineTo(cx - sw*0.7 + hr*0.1, waistY + hr*0.5);
+  ctx.closePath();
+  ctx.fill();
+  // Right arm
+  ctx.beginPath();
+  ctx.moveTo(cx + sw, shoulderY + hr*0.2);
+  ctx.lineTo(cx + sw + hr*0.3, shoulderY + hr*0.3);
+  ctx.lineTo(cx + sw*0.7 + hr*0.3, waistY + hr*0.5);
+  ctx.lineTo(cx + sw*0.7 - hr*0.1, waistY + hr*0.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Cuffs / hands
+  ctx.fillStyle = a.skin;
+  ctx.beginPath();
+  ctx.arc(cx - sw*0.7 - hr*0.1, waistY + hr*0.55, hr*0.28, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + sw*0.7 + hr*0.1, waistY + hr*0.55, hr*0.28, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── NECK ──
+  ctx.fillStyle = a.skin;
+  ctx.fillRect(cx - hr*0.28, neckBot - hr*0.1, hr*0.56, hr*0.5);
+
+  // ── HEAD ──
+  // Slight head shape (not perfectly round — slight oval)
+  const hGrd = ctx.createRadialGradient(cx - hr*0.25, headY - hr*0.3, hr*0.1, cx, headY, hr);
+  hGrd.addColorStop(0, shade(a.skin, 25));
+  hGrd.addColorStop(0.6, a.skin);
+  hGrd.addColorStop(1, shade(a.skin, -35));
+  ctx.fillStyle = hGrd;
+  ctx.beginPath();
+  ctx.ellipse(cx, headY, hr, hr*1.08, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Ear
+  ctx.fillStyle = shade(a.skin, -15);
+  ctx.beginPath();
+  ctx.ellipse(cx + hr*0.88, headY + hr*0.05, hr*0.18, hr*0.25, 0.3, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── HAIR ──
+  ctx.fillStyle = a.hair;
+  ctx.beginPath();
+  ctx.ellipse(cx, headY - hr*0.35, hr*0.95, hr*0.68, 0, Math.PI, Math.PI*2);
+  ctx.fill();
+  // Side hair
+  ctx.beginPath();
+  ctx.ellipse(cx - hr*0.82, headY - hr*0.1, hr*0.22, hr*0.5, -0.3, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── EYES ──
+  // Whites
+  ctx.fillStyle = 'rgba(240,235,220,0.9)';
+  ctx.beginPath();
+  ctx.ellipse(cx - hr*0.32, headY - hr*0.08, hr*0.18, hr*0.13, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + hr*0.32, headY - hr*0.08, hr*0.18, hr*0.13, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Pupils
+  ctx.fillStyle = 'rgba(15,10,5,0.9)';
+  ctx.beginPath();
+  ctx.arc(cx - hr*0.30, headY - hr*0.08, hr*0.09, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + hr*0.30, headY - hr*0.08, hr*0.09, 0, Math.PI*2);
+  ctx.fill();
+  // Eye shine
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(cx - hr*0.27, headY - hr*0.12, hr*0.04, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + hr*0.33, headY - hr*0.12, hr*0.04, 0, Math.PI*2);
+  ctx.fill();
+
+  // ── MOUTH ── slight smile
+  ctx.strokeStyle = shade(a.skin, -40);
+  ctx.lineWidth = hr * 0.1;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, headY + hr*0.3, hr*0.22, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // ── EYEBROWS ──
+  ctx.strokeStyle = a.hair;
+  ctx.lineWidth = hr * 0.11;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - hr*0.44, headY - hr*0.28);
+  ctx.lineTo(cx - hr*0.18, headY - hr*0.25);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + hr*0.44, headY - hr*0.28);
+  ctx.lineTo(cx + hr*0.18, headY - hr*0.25);
+  ctx.stroke();
+}
+
+function shade(hex,amt){
+  const n=parseInt(hex.replace('#',''),16);
+  const r=Math.min(255,Math.max(0,(n>>16)+amt));
+  const g=Math.min(255,Math.max(0,((n>>8)&255)+amt));
+  const b=Math.min(255,Math.max(0,(n&255)+amt));
+  return `rgb(${r},${g},${b})`;
+}
+
+// ── BLOODBATH SPLAT ──
+// Three-phase animated gore: flash → drips build → full wreckage
+function drawSplat(W, H) {
+  if(!splat) return;
+  if(splatAlpha < 1) splatAlpha += 0.018;
+  if(splatAlpha <= 0) return;
+  var a = Math.min(1, splatAlpha);
+  var bw = W * 0.38;
+  var cx = bw * 0.50;
+  var impactY = H * 0.72;
+
+  ctx.save();
+
+  // PHASE 1: IMPACT FLASH (0 to 0.22)
+  if(a < 0.22) {
+    var flashA = 1 - (a / 0.22);
+    ctx.fillStyle = 'rgba(160,0,0,' + (flashA * 0.98) + ')';
+    ctx.fillRect(-20, -20, W+40, H+40);
+    ctx.strokeStyle = 'rgba(255,200,180,' + (flashA * 0.8) + ')';
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(cx, impactY, (1-flashA)*bw*0.9, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+
+  var goreA = Math.min(1, (a - 0.22) / 0.4);
+
+  // Dark base fill
+  ctx.globalAlpha = goreA;
+  ctx.fillStyle = '#2d0000';
+  ctx.fillRect(0, impactY + 5, bw, H - impactY + 20);
+
+  // Layered blood pools
+  var pools = [
+    [bw*0.50, H*0.048, '#5a0000'],
+    [bw*0.38, H*0.032, '#7c0a0a'],
+    [bw*0.24, H*0.020, '#a01414'],
+    [bw*0.13, H*0.012, '#c82020']
+  ];
+  pools.forEach(function(p) {
+    ctx.fillStyle = p[2];
+    ctx.beginPath();
+    ctx.ellipse(cx, impactY + 12, p[0], p[1], 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Progressive drips — each grows down at different start times
+  var dripDefs = [
+    {x:0.48, s:0.05, len:0.22, w:7},
+    {x:0.20, s:0.12, len:0.18, w:5},
+    {x:0.72, s:0.10, len:0.20, w:6},
+    {x:0.10, s:0.20, len:0.14, w:4},
+    {x:0.35, s:0.18, len:0.16, w:5},
+    {x:0.62, s:0.15, len:0.17, w:5},
+    {x:0.82, s:0.25, len:0.12, w:4},
+  ];
+  dripDefs.forEach(function(d) {
+    var dA = Math.max(0, Math.min(1, (goreA - d.s) / 0.28));
+    if(dA <= 0) return;
+    var dx = d.x * bw;
+    var dLen = d.len * H * dA;
+    ctx.globalAlpha = goreA * Math.min(1, dA * 2);
+    ctx.fillStyle = '#7a0606';
+    ctx.fillRect(dx - d.w/2, impactY - dLen, d.w, dLen + 10);
+    ctx.beginPath();
+    ctx.ellipse(dx, impactY + 10, d.w*1.5, d.w*1.1, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.globalAlpha = goreA;
+
+  // Scatter splat drops with tails
+  var splats = [
+    {x:-0.02,y:0.65,r:10},{x:1.01,y:0.64,r:8},
+    {x:0.10, y:0.60,r:7}, {x:0.86,y:0.61,r:9},
+    {x:0.18, y:0.55,r:6}, {x:0.78,y:0.57,r:7},
+    {x:0.28, y:0.51,r:8}, {x:0.68,y:0.52,r:6},
+    {x:0.38, y:0.49,r:7}, {x:0.58,y:0.50,r:8},
+    {x:0.05, y:0.70,r:11},{x:0.92,y:0.69,r:9},
+    {x:0.14, y:0.74,r:7}, {x:0.82,y:0.73,r:8},
+  ];
+  splats.forEach(function(d) {
+    ctx.fillStyle = d.r > 8 ? '#6a0505' : '#8c0e0e';
+    ctx.beginPath();
+    ctx.arc(d.x*bw, d.y*H, d.r, 0, Math.PI*2);
+    ctx.fill();
+    if(d.y < 0.62) {
+      ctx.fillRect(d.x*bw - 2, d.y*H, 4, d.r*2.8);
+    }
+  });
+
+  // PHASE 3: WRECKAGE (goreA > 0.4)
+  var wreckA = Math.max(0, (goreA - 0.4) / 0.6);
+  if(wreckA > 0) {
+    ctx.globalAlpha = goreA * wreckA;
+    var ww = bw * 0.56, wh = H * 0.044;
+    var wx = cx - ww/2, wy = impactY - wh*0.6;
+
+    // Crushed cab body
+    ctx.fillStyle = '#22202a';
+    ctx.fillRect(wx, wy, ww, wh);
+
+    // Bent gold frame
+    ctx.strokeStyle = 'rgba(201,168,76,0.75)';
+    ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(wx+4, wy+2);
+    ctx.lineTo(wx+ww*0.38, wy+wh-3);
+    ctx.lineTo(wx+ww*0.62, wy+2);
+    ctx.lineTo(wx+ww-4, wy+wh-2);
+    ctx.stroke();
+
+    // Glass shards
+    ctx.fillStyle = 'rgba(160,185,220,0.55)';
+    var shards = [[-0.20,-0.12],[0.14,-0.15],[-0.08,-0.20],[0.24,-0.09],[0.03,-0.22],[-0.28,-0.06],[0.32,-0.13],[-0.15,-0.18],[0.20,-0.18]];
+    shards.forEach(function(s) {
+      var sx = cx + s[0]*bw*0.75, sy = impactY + s[1]*H*0.35;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy); ctx.lineTo(sx+7, sy-5); ctx.lineTo(sx+4, sy+7);
+      ctx.closePath(); ctx.fill();
+    });
+
+    // SPLAT text — appears last
+    var textA = Math.max(0, (goreA - 0.75) / 0.25);
+    if(textA > 0) {
+      ctx.globalAlpha = textA;
+      ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
+      ctx.font = '900 ' + Math.max(16, Math.round(bw*0.14)) + 'px Cabinet Grotesk,sans-serif';
+      ctx.fillStyle = '#ff1515';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText('💀  SPLAT!  💀', cx, impactY - H*0.10);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════
+function getStress() {
+  if(liftY<=0) return 0;
+  return Math.min(1, liftY/MAX_FLOORS + (passengers-1)*.06);
+}
+function getCrashProb(f) {
+  return Math.min(.95, BASE_CRASH[f]+(passengers-1)*.04);
+}
+
+function updateHUD() {
+  if(gamePhase!=='riding') return;
+  const f=Math.max(1,Math.min(Math.round(liftY),MAX_FLOORS));
+  const stress=getStress();
+  const pct=Math.round(stress*100);
+  const mult=FLOOR_MULT[f]||1;
+
+  updateHum(stress);
+
+  // Canvas HUD badges
+  document.getElementById('hudFloor').textContent=liftY<.4?'G':liftY>=13-.3?'13 ✦':`F${Math.round(liftY)}`;
+  document.getElementById('hudMult').textContent=mult.toFixed(2)+'×';
+
+  // Cashout button below canvas
+  if(betPlaced) {
+    document.getElementById('hudCashoutAmt').textContent=(betStake*mult).toFixed(2);
+  }
+
+  // Sidebar ride stats
+  document.getElementById('sidePax').textContent=passengers;
+  document.getElementById('sideStressPct').textContent=pct+'%';
+  const sf=document.getElementById('sideStressFill');
+  sf.style.width=pct+'%';
+  sf.style.background=stress<.4?'#27ae60':stress<.7?'#c9a84c':'#e74c3c';
+  document.getElementById('sideStressPct').style.color=stress<.4?'#27ae60':stress<.7?'#c9a84c':'#e74c3c';
+
+  const nf=Math.round(liftY)+1;
+  const probEl=document.getElementById('sideCrashProb');
+  if(nf<=MAX_FLOORS){
+    const p=getCrashProb(nf);
+    probEl.textContent=Math.round(p*100)+'%';
+    probEl.style.color=p<.25?'#2ecc71':p<.5?'#e8c870':'#e74c3c';
+  } else { probEl.textContent='—'; probEl.style.color='var(--cream2)'; }
+}
+
+// Timer
+function startTimer() {
+  timerSecs=TIMER_SECS;
+  renderTimer();
+  timerInterval=setInterval(()=>{
+    timerSecs--;
+    renderTimer();
+    if(timerSecs<=0){ clearInterval(timerInterval); startRide(); }
+  },1000);
+}
+function renderTimer() {
+  const tv=document.getElementById('timerVal');
+  const tb=document.getElementById('timerBar');
+  tv.textContent=timerSecs+'s';
+  tv.className='timer-val'+(timerSecs<=5?' urgent':'');
+  tb.style.width=(timerSecs/TIMER_SECS*100)+'%';
+  tb.className='timer-bar-fill'+(timerSecs<=5?' urgent':'');
+}
+
+function startRide() {
+  if(gamePhase!=='betting') return;
+  gamePhase='riding';
+  hasCashedOut=false;
+  currentFloor=0;
+  liftTarget=0;liftY=0;camY=0;
+  passengers=1;
+
+  roundCrashFloor=DEMO_CRASHES[demoIdx%DEMO_CRASHES.length];
+  demoIdx++;
+
+  setHint('Riding up… cash out before the cable snaps!');
+  setLabel(`Round ${round} · Live`);
+  document.getElementById('betCard').style.display='none';
+  document.getElementById('rideStatsCard').style.display='block';
+  document.getElementById('rideHud').classList.add('visible');
+  if(betPlaced) document.getElementById('btnCashout').classList.add('visible');
+
+  startHum();
+  setTimeout(()=>advanceFloor(),600);
+}
+
+let advancing=false;
+const DWELL_MS = 1200; // pause at each floor before auto-advancing
+
+function advanceFloor() {
+  if(gamePhase!=='riding' || advancing) return;
+  advancing = true;
+  const next = currentFloor + 1;
+
+  if(next > MAX_FLOORS) { stopHum(); settleRound(false, MAX_FLOORS); advancing=false; return; }
+
+  // Set target — RAF loop lerps lift smoothly
+  liftTarget = next;
+
+  // Fire when lift arrives (detected by RAF loop proximity check)
+  arrivalCallback = function() {
+    currentFloor = next;
+    // DO NOT snap liftY — let it sit naturally at liftTarget
+
+    playDing();
+
+    // Board passengers
+    const np = SCRIPTED_PAX[currentFloor] || 0;
+    if(np > 0) {
+      passengers = Math.min(passengers + np, 6);
+      showToast('👥 ' + np + ' passenger' + (np>1?'s':'') + ' board — stress rising!');
+    }
+
+    addChip(currentFloor, true);
+    advancing = false;
+
+    // Auto cash-out
+    if(betPlaced && targetFloor === currentFloor) { cashOut(); return; }
+
+    // Crash or continue
+    if(currentFloor === roundCrashFloor) {
+      setTimeout(function() { triggerCrash(); }, 350);
+    } else {
+      const mult = FLOOR_MULT[currentFloor].toFixed(2);
+      setHint('Floor ' + currentFloor + ' · ' + mult + '× — cash out or keep riding?');
+      rideTimeout = setTimeout(function() { advanceFloor(); }, DWELL_MS);
+    }
+  };
+}
+
+function triggerCrash() {
+  if(gamePhase!=='riding') return;
+  gamePhase='result';
+  clearTimeout(rideTimeout);
+  arrivalCallback = null;
+  shakeFrames=18;
+  crashAnim=true;
+  crashVel=0;
+  addChip(currentFloor,false);
+  document.getElementById('btnCashout').classList.remove('visible');
+  // Splat is triggered on impact (in onCrashComplete), not at cable snap
+
+  stopHum();
+  playCableSnap();
+  if (rumbleStartTimer) clearTimeout(rumbleStartTimer);
+  rumbleStartTimer = setTimeout(function(){ rumbleStartTimer = null; startFallRumble(); }, 120);
+}
+
+let crashSettled=false;
+function onCrashComplete() {
+  if(crashSettled) return;
+  crashSettled=true;
+  stopAllSounds(); // kill hum + rumble + any pending rumble timer
+  playImpactThud();
+  splat=true; splatAlpha=0; // begin bloodbath at impact
+  // Settle after delay so player sees the bloodbath
+  settleRound(true, currentFloor);
+}
+
+function cashOut() {
+  if(gamePhase!=='riding'||!betPlaced) return;
+  clearTimeout(rideTimeout);
+  arrivalCallback = null;
+  hasCashedOut=true;
+  gamePhase='result';
+  stopHum();
+  settleRound(false,currentFloor);
+}
+
+function settleRound(crashed,floor) {
+  const f=Math.max(1,Math.min(floor,MAX_FLOORS));
+  const mult=FLOOR_MULT[f];
+  let winAmt=0,txt='',cls='';
+
+  if(crashed){
+    if(betPlaced){ balance=Math.max(0,balance-betStake); txt=`💀 CRASHED at F${roundCrashFloor}! Lost £${betStake.toFixed(2)}`; cls='lose'; flashBal('lose'); }
+    else { txt=`💀 CRASHED at F${roundCrashFloor}! No bet placed.`; cls='neutral'; }
+    // Delay the banner so bloodbath is visible first
+    setTimeout(()=>showBanner(txt,cls), 1800);
+    updateBal();
+    roundHistory.unshift({round,crashed,floor:crashed?roundCrashFloor:floor,mult,betPlaced,winAmt,betStake});
+    updateHistory();
+    crashSettled=false;
+    setTimeout(()=>{ hideBanner(); resetRound(); }, 5500);
+    return;
+  } else if(hasCashedOut&&betPlaced){
+    winAmt=betStake*mult; balance+=winAmt-betStake;
+    txt=`✓ Cashed out F${floor} — £${winAmt.toFixed(2)} (${mult.toFixed(2)}×)`; cls='win'; flashBal('win');
+  } else {
+    txt=`Lift reached F${floor} (${mult.toFixed(2)}×) — no bet placed`; cls='neutral';
+  }
+
+  showBanner(txt,cls);
+  updateBal();
+  roundHistory.unshift({round,crashed,floor:crashed?roundCrashFloor:floor,mult,betPlaced,winAmt,betStake});
+  updateHistory();
+  crashSettled=false;
+  setTimeout(()=>{ hideBanner(); resetRound(); },3500);
+}
+
+function resetRound() {
+  round++;betPlaced=false;betStake=0;hasCashedOut=false;
+  currentFloor=0;liftY=0;liftTarget=0;camY=0;
+  passengers=1;targetFloor=null;gamePhase='betting';advancing=false;
+  splat=false; splatAlpha=0;
+  crashSettled=false; // reset so next crash can settle
+  stopAllSounds(); // safety net — kill anything residual
+
+  document.getElementById('betCard').style.display='block';
+  document.getElementById('rideStatsCard').style.display='none';
+  document.getElementById('rideHud').classList.remove('visible');
+  document.getElementById('btnCashout').classList.remove('visible');
+  setLabel(`Round ${round} · Betting Open`);
+  setHint('Place your bet before the timer runs out…');
+  updatePotWin();
+  startTimer();
+}
+
+// Bet UI
+function placeBet() {
+  if(gamePhase!=='betting') return;
+  initAudio(); resumeAudio();
+  const stake=parseFloat(document.getElementById('stakeInput').value);
+  if(isNaN(stake)||stake<1) return;
+  if(stake>balance){ showBanner('Insufficient balance!','neutral'); setTimeout(hideBanner,2000); return; }
+  betPlaced=true; betStake=stake;
+  clearInterval(timerInterval);
+  setLabel(`Round ${round} · Bet Placed`);
+  showBanner(`Bet of £${stake.toFixed(2)} placed — riding up!`,'neutral');
+  setTimeout(()=>{ hideBanner(); startRide(); },800);
+}
+function setStake(v){ document.getElementById('stakeInput').value=v; updatePotWin(); }
+function updatePotWin(){
+  const s=parseFloat(document.getElementById('stakeInput').value)||0;
+  const t=targetFloor;
+  if(t&&s>0) document.getElementById('potWin').textContent=`£${(s*FLOOR_MULT[t]).toFixed(2)} at F${t}`;
+  else if(s>0) document.getElementById('potWin').textContent=`£${s.toFixed(2)}+ (cash out anytime)`;
+  else document.getElementById('potWin').textContent='—';
+}
+document.getElementById('stakeInput').addEventListener('input',updatePotWin);
+
+function buildFloorBtns(){
+  const c=document.getElementById('floorBtns'); c.innerHTML='';
+  for(let f=3;f<=MAX_FLOORS;f+=2){
+    const b=document.createElement('button');
+    const m=FLOOR_MULT[f];
+    const mTxt = m>=10 ? Math.round(m)+'×' : m.toFixed(2).replace(/\.?0+$/,'')+'×';
+    b.className='floor-btn';b.textContent=`F${f} (${mTxt})`;
+    b.onclick=()=>{targetFloor=f;document.querySelectorAll('.floor-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');updatePotWin();};
+    c.appendChild(b);
+  }
+  const mb=document.createElement('button');
+  mb.className='floor-btn';mb.textContent='Manual';
+  mb.onclick=()=>{targetFloor=null;document.querySelectorAll('.floor-btn').forEach(x=>x.classList.remove('active'));mb.classList.add('active');updatePotWin();};
+  c.appendChild(mb);
+}
+
+// History
+function updateHistory(){
+  const el=document.getElementById('historyList');
+  if(!roundHistory.length){ el.innerHTML='<div style="font-size:11px;color:var(--cream3);font-style:italic">No rounds played yet</div>'; return; }
+  el.innerHTML=roundHistory.slice(0,10).map(h=>{
+    const rs=h.betPlaced?(h.crashed?`-£${h.betStake.toFixed(2)}`:`+£${(h.winAmt-h.betStake).toFixed(2)}`):'No bet';
+    const cl=h.betPlaced?(h.crashed?'loss':'win'):'';
+    return `<div class="history-item ${cl}"><span class="hi-round">R${h.round}</span><span class="hi-floor">F${h.floor} · ${h.mult.toFixed(2)}×</span><span class="hi-result">${rs}</span></div>`;
+  }).join('');
+}
+
+// Floor chips
+function addChip(f,ok){
+  const s=document.getElementById('floorStrip');
+  const c=document.createElement('div');
+  c.className=`floor-chip ${ok?'success':'crash'}`;
+  c.textContent=ok?`▲ F${f}`:`✕ F${f}`;
+  s.appendChild(c);s.scrollLeft=s.scrollWidth;
+}
+
+// Banner
+function showBanner(t,type){
+  const b=document.getElementById('resultBanner');
+  b.textContent=t;
+  b.className='result-block show '+(type==='win'?'win-banner':type==='lose'?'lose-banner':'neutral-banner');
+}
+function hideBanner(){ document.getElementById('resultBanner').className='result-block'; }
+
+// Toast
+function showToast(t) {
+  setHint(t);
+  // Revert hint after delay
+  setTimeout(function() {
+    if(gamePhase==='riding') {
+      const f=currentFloor;
+      const mult=FLOOR_MULT[Math.min(f,MAX_FLOORS)]||1;
+      setHint('Floor '+f+' · '+mult.toFixed(2)+'× — cash out or keep riding?');
+    }
+  }, 2000);
+}
+
+// Balance
+function updateBal(){ document.getElementById('balanceDisplay').textContent=`£${balance.toFixed(2)}`; }
+function flashBal(type){
+  const el=document.getElementById('balanceDisplay');
+  el.classList.add(type); setTimeout(()=>el.classList.remove(type),1500); updateBal();
+}
+
+// Stage text
+function setLabel(t){ document.getElementById('stageLabel').textContent=t; }
+function setHint(t) { document.getElementById('stageHint').textContent=t; }
+
+// Theme toggle (preserves night feel)
+let forceNight=false;
+function toggleTheme(){
+  forceNight=!forceNight;
+  // Override getPhase temporarily
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+buildFloorBtns();
+updatePotWin();
+updateBal();
+updateHistory();
+startTimer();
+</script>
+</body>
+</html>
